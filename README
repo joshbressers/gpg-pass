@@ -1,0 +1,32 @@
+gpg-pass password manager
+
+This is a rather simple password manager that uses gpg as the encryption
+mechanism. This is done to solve a somewhat unique problem where we need
+certain people to have access to certain passwords.
+
+This code is currently highly experimental. It needs to be cleaned up quite
+a bit, but I needed something fast.
+
+Use:
+
+To use this you'll need the pygpgme package installed (this is on Fedora,
+I'm unsure about other distributions).
+
+Create your "store" directory. You can then add passwords as such:
+
+bress@bowser gpg-pass % ./set-password -s /tmp/store -r josh@bress.net
+example.com
+Adding example.com
+Username: test-user
+Password: 
+
+This create a file that is a sha256 hash of the site name (this is so
+nobody knows what your site names are).
+
+
+To decrypt:
+
+bress@bowser gpg-pass % ./get-password -s /tmp/store example.com
+site: example.com
+username: test-user
+password: secret
