@@ -5,7 +5,10 @@ mechanism. This is done to solve a somewhat unique problem where we need
 certain people to have access to certain passwords.
 
 This code is currently highly experimental. It needs to be cleaned up quite
-a bit, but I needed something fast.
+a bit, but I needed something fast. This should be considered a proof of
+concept. A proper solution needs to be written in something like C where we
+can ensure memory containing passwords is properly cleared (I'm not even
+attempting to do this in python).
 
 Use:
 
