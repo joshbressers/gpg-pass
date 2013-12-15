@@ -13,7 +13,10 @@ AC_PROG_CPP
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+AC_CHECK_HEADERS([gpgme.h])
 AC_HEADER_STDC
+
+AC_CHECK_LIB(gpgme, gpgme_new)
 
 AC_SUBST(LIBS)
 AC_SUBST(CFLAGS)
@@ -24,4 +27,5 @@ AC_SUBST(exec_prefix)
 AC_SUBST(datadir)
 
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([src/Makefile])
 AC_OUTPUT

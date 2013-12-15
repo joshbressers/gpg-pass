@@ -1,0 +1,7 @@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+CFLAGS= @CFLAGS@
+LDFLAGS= @LIBS@
+
+all: get-password
