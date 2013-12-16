@@ -24,16 +24,23 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-
-int main(int argc, char *argv[]) {
+char *read_gpg_data(char *filename) {
+    /* Read the GPG data from a file */
 
     int fd;
     ssize_t len;
-    char buffer[1024];
+    ssize_t buffer_len = 1024;
+    char *buffer;
 
     gpgme_ctx_t ctx;
     gpgme_error_t err;
     gpgme_data_t in, out;
+
+    buffer = malloc(buffer_len);
+    if (buffer == 0) {
+        puts("malloc error");
+        exit(1);
+    }
 
     /* This is needed or the library segfaults */
     gpgme_check_version (NULL);
@@ -41,49 +48,54 @@ int main(int argc, char *argv[]) {
     /* New context */
     err = gpgme_new(&ctx);
     if (err) {
-         fprintf (stderr, "%s: gpgme_new(): %s: %s\n",
-                  argv[0], gpgme_strsource (err), gpgme_strerror (err));
+         fprintf (stderr, "gpgme_new(): %s: %s\n",
+                  gpgme_strsource (err), gpgme_strerror (err));
          exit (1);
     }
 
     err = gpgme_data_new(&out);
     if (err) {
-         fprintf (stderr, "%s: gpg_data_new(): %s: %s\n",
-                  argv[0], gpgme_strsource (err), gpgme_strerror (err));
+         fprintf (stderr, "gpg_data_new(): %s: %s\n",
+                  gpgme_strsource (err), gpgme_strerror (err));
          exit (1);
     }
 
     /* Open our file for reading */
-    char *filename;
-    filename = argv[1];
     fd = open(filename, O_RDONLY);
     err = gpgme_data_new_from_fd(&in, fd);
     if (err) {
-         fprintf (stderr, "%s: gpgme_data_new_from_fd(): %s: %s\n",
-                  argv[0], gpgme_strsource (err), gpgme_strerror (err));
+         fprintf (stderr, "gpgme_data_new_from_fd(): %s: %s\n",
+                  gpgme_strsource (err), gpgme_strerror (err));
          exit (1);
     }
 
     err = gpgme_op_decrypt(ctx, in, out);
     if (err) {
-         fprintf (stderr, "%s: gpgme_op_decrypt(): %s: %s\n",
-                  argv[0], gpgme_strsource (err), gpgme_strerror (err));
+         fprintf (stderr, "gpgme_op_decrypt(): %s: %s\n",
+                  gpgme_strsource (err), gpgme_strerror (err));
          exit (1);
     }
 
     /* We have to "seek" our output buffer back to zero */
     gpgme_data_seek(out, 0, SEEK_SET);
 
-    len = gpgme_data_read(out, buffer, sizeof(buffer));
+    len = gpgme_data_read(out, buffer, buffer_len);
     buffer[len] = '\0';
-    if (len == 0) {
-        puts("Nothing read");
-    } else {
-        printf("%s\n", buffer);
-    }
 
+    /* gpgme cleanup */
     gpgme_data_release(in);
     gpgme_data_release(out);
     gpgme_release(ctx);
+
+    return buffer;
+}
+
+int main(int argc, char *argv[]) {
+
+    char *data;
+
+    data = read_gpg_data(argv[1]);
+    printf("%s\n", data);
+
     exit(0);
 }
