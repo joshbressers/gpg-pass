@@ -5,3 +5,11 @@ CFLAGS= @CFLAGS@
 LDFLAGS= @LIBS@
 
 all: get-password
+
+sha256.o: sha256.c sha256.h
+get-password: get-password.c
+	$(CC) get-password.c -o get-password sha256.o $(LDFLAGS) $(CFLAGS)
+
+clean:
+	rm -f get-password
+

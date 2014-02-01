@@ -19,18 +19,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <gpgme.h>
+#include <getopt.h>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-char *read_gpg_data(char *filename) {
+#include "sha256.h"
+
+char *read_gpg_data(char *store, char *filename) {
     /* Read the GPG data from a file */
 
     int fd;
     ssize_t len;
     ssize_t buffer_len = 1024;
     char *buffer;
+    char *file_path;
+    ssize_t file_path_size = 0;
 
     gpgme_ctx_t ctx;
     gpgme_error_t err;
@@ -41,6 +47,15 @@ char *read_gpg_data(char *filename) {
         puts("malloc error");
         exit(1);
     }
+
+    file_path_size = strlen(store) + strlen(filename) + 1;
+    file_path = malloc(file_path_size + 1);
+    if (buffer == 0) {
+        puts("malloc error");
+        exit(1);
+    }
+
+    snprintf(file_path, file_path_size + 1, "%s/%s", store, filename);
 
     /* This is needed or the library segfaults */
     gpgme_check_version (NULL);
@@ -61,7 +76,7 @@ char *read_gpg_data(char *filename) {
     }
 
     /* Open our file for reading */
-    fd = open(filename, O_RDONLY);
+    fd = open(file_path, O_RDONLY);
     err = gpgme_data_new_from_fd(&in, fd);
     if (err) {
          fprintf (stderr, "gpgme_data_new_from_fd(): %s: %s\n",
@@ -90,12 +105,52 @@ char *read_gpg_data(char *filename) {
     return buffer;
 }
 
+void print_help() {
+    puts("This is some help");
+    exit(1);
+}
+
 int main(int argc, char *argv[]) {
 
-    char *data;
+    int c;
+    char *gpg_data;
+    char *store = NULL;
+    char site_name[256];
 
-    data = read_gpg_data(argv[1]);
-    printf("%s\n", data);
+    uint8_t sha_output[32];
+    context_sha256_t ctx;
+
+    static struct option long_options[] = {
+        {"store", required_argument, NULL, 's'},
+        {0, 0, 0, 0}
+    };
+
+    while ((c = getopt_long(argc, argv, "s:", long_options, NULL)) != -1) {
+        switch(c) {
+            case 's':
+                store = optarg;
+                break;
+            case '?':
+                /* fallthrough */
+            default:
+                print_help();
+        }
+    }
+
+    if (store == NULL)
+        print_help();
+
+    sha256_starts(&ctx);
+    sha256_update(&ctx, (uint8_t *) argv[optind], strlen(argv[optind]));
+    sha256_finish(&ctx, sha_output);
+
+    for (c = 0; c < 32; c++) {
+        sprintf(site_name + (c * 2), "%02x", sha_output[c]);
+    }
+    site_name[c*2] = '\0';
+
+    gpg_data = read_gpg_data(store, site_name);
+    printf("%s\n", gpg_data);
 
     exit(0);
 }
