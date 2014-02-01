@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 #include "sha256.h"
 
@@ -86,9 +87,10 @@ char *read_gpg_data(char *store, char *filename) {
 
     err = gpgme_op_decrypt(ctx, in, out);
     if (err) {
-         fprintf (stderr, "gpgme_op_decrypt(): %s: %s\n",
-                  gpgme_strsource (err), gpgme_strerror (err));
-         exit (1);
+        /* Sometimes decryption will fail */
+        free(buffer);
+        buffer = NULL;
+        goto DONE;
     }
 
     /* We have to "seek" our output buffer back to zero */
@@ -102,7 +104,42 @@ char *read_gpg_data(char *store, char *filename) {
     gpgme_data_release(out);
     gpgme_release(ctx);
 
+DONE:
+
     return buffer;
+}
+
+void print_all_sites(char *store) {
+    /* list the names of all sites */
+
+    DIR *dir;
+    struct dirent *ent;
+    char *input_data;
+    int i;
+
+    if ((dir = opendir(store)) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            if (ent->d_type == DT_REG) {
+                input_data = read_gpg_data(store, ent->d_name);
+                /* Skip things not encrypted to us */
+                if (input_data == NULL) continue;
+
+                /* XXX: This is without a doubt a horrible hack. It assumes
+                 * a very specific file format. It needs to be fixed
+                 */
+                for (i = 6; !isspace(input_data[i]); i++) {
+                        /* Print the site name stored in the file */
+                        printf("%c", input_data[i]);
+                }
+                printf("\n");
+            }
+        }
+        closedir(dir);
+
+    } else {
+        printf("Could not open directory %s\n", store);
+        exit(1);
+    }
 }
 
 void print_help() {
@@ -140,17 +177,26 @@ int main(int argc, char *argv[]) {
     if (store == NULL)
         print_help();
 
-    sha256_starts(&ctx);
-    sha256_update(&ctx, (uint8_t *) argv[optind], strlen(argv[optind]));
-    sha256_finish(&ctx, sha_output);
+    if (argv[optind] == NULL) {
+        print_all_sites(store);
+    } else {
 
-    for (c = 0; c < 32; c++) {
-        sprintf(site_name + (c * 2), "%02x", sha_output[c]);
+        sha256_starts(&ctx);
+        sha256_update(&ctx, (uint8_t *) argv[optind], strlen(argv[optind]));
+        sha256_finish(&ctx, sha_output);
+
+        for (c = 0; c < 32; c++) {
+            sprintf(site_name + (c * 2), "%02x", sha_output[c]);
+        }
+        site_name[c*2] = '\0';
+
+        gpg_data = read_gpg_data(store, site_name);
+        if (gpg_data) {
+            printf("%s\n", gpg_data);
+        } else {
+            puts("No Data");
+        }
     }
-    site_name[c*2] = '\0';
-
-    gpg_data = read_gpg_data(store, site_name);
-    printf("%s\n", gpg_data);
 
     exit(0);
 }
