@@ -30,12 +30,12 @@ def print_all_sites(store):
     for i in onlyfiles:
         try:
             output = decrypt_file(os.path.join(store, i))
+            for j in output.readlines():
+                if j.startswith("site: "):
+                    print j.strip().split(": ")[1]
         except gpgme.GpgmeError as e:
             print "Couldn't read %s" % i
             next
-        for j in output.readlines():
-            if j.startswith("site: "):
-                print j.strip().split(": ")[1]
 
 def decrypt_file(encrypted_file):
     gpg_ctx = gpgme.Context()
