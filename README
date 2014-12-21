@@ -33,3 +33,7 @@ bress@bowser gpg-pass % ./get-password -s /tmp/store example.com
 site: example.com
 username: test-user
 password: secret
+
+Instead of using the -s option each time, you can set the environment
+variable GPGPASS_DATABASE.
+    export GPGPASS_DATABASE=/tmp/store

@@ -54,14 +54,21 @@ def main():
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-s", "--store", dest="password_store",
                       help="Path to the password store", metavar="DIRECTORY")
+    password_store = None
 
     (options, args) = parser.parse_args()
 
-    if not options.password_store:
+    if os.environ.has_key('GPGPASS_DATABASE'):
+            password_store = os.environ['GPGPASS_DATABASE']
+
+    # Let the command line switch override the environment variable
+    if options.password_store:
+            password_store = options.password_store
+
+    if password_store is None:
         parser.print_help()
         sys.exit(1)
 
-    password_store = options.password_store
 
     if len(args) == 0:
         print_all_sites(password_store)

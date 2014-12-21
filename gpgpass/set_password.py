@@ -32,13 +32,22 @@ parser.add_option("-s", "--store", dest="password_store",
 parser.add_option("-r", "--recipient", dest="recipient", action="append",
                   help="Recipient to encrypt the site to. May be used multiple times", metavar="NAME")
 
+password_store = None
+
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
     parser.print_help()
     sys.exit(1)
 
-if not options.password_store:
+if os.environ.has_key('GPGPASS_DATABASE'):
+    password_store = os.environ['GPGPASS_DATABASE']
+
+# Let the command line switch override the environment variable
+if options.password_store:
+    password_store = options.password_store
+
+if password_store is None:
     parser.print_help()
     sys.exit(1)
 
@@ -46,7 +55,6 @@ if len(options.recipient) == 0:
     parser.print_help()
     sys.exit(1)
 
-password_store = options.password_store
 site = args[0]
 new_entry = True
 
