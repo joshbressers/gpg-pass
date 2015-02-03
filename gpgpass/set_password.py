@@ -24,44 +24,21 @@ import gpgme
 import StringIO
 import getpass
 import optparse
+import gpgpass_config
 
-def main():
+def add():
+    "Add or update a site in the store"
 
-    usage = "usage: %prog [options] site"
-    parser = optparse.OptionParser(usage=usage)
-    parser.add_option("-s", "--store", dest="password_store",
-                      help="Path to the password store", metavar="DIRECTORY")
-    parser.add_option("-r", "--recipient", dest="recipient", action="append",
-                      help="Recipient to encrypt the site to. May be used multiple times", metavar="NAME")
+    global_config = gpgpass_config.get_config()
 
-    password_store = None
+    site = global_config.get('site')
+    password_store = global_config.get('store')
+    recipients = global_config.get('recipient')
 
-    (options, args) = parser.parse_args()
-
-    if len(args) != 1:
-        parser.print_help()
-        sys.exit(1)
-
-    if os.environ.has_key('GPGPASS_DATABASE'):
-        password_store = os.environ['GPGPASS_DATABASE']
-
-    # Let the command line switch override the environment variable
-    if options.password_store:
-        password_store = options.password_store
-
-    if password_store is None:
-        parser.print_help()
-        sys.exit(1)
-
-    if len(options.recipient) == 0:
-        parser.print_help()
-        sys.exit(1)
-
-    site = args[0]
     new_entry = True
 
     site_data = {
-                    'site'      : None,
+                    'site'      : site,
                     'username'  : None,
                     'password'  : None
                 }
@@ -120,7 +97,7 @@ def main():
                                                  'password', site_data['password'])
 
     keys = []
-    for i in options.recipient:
+    for i in recipients:
         keys.append(gpg_ctx.get_key(i))
 
     plaintext = StringIO.StringIO(plaintext_data)
@@ -133,7 +110,3 @@ def main():
     fh = open(encrypted_file, 'w')
     fh.writelines(ciphertext.readlines())
     fh.close
-
-if __name__ == "__main__":
-    main()
-

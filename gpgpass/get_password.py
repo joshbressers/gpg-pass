@@ -21,6 +21,7 @@ import hashlib
 import gpgme
 import StringIO
 import optparse
+import gpgpass_config
 
 def print_all_sites(store):
     # This comes from
@@ -30,12 +31,12 @@ def print_all_sites(store):
     for i in onlyfiles:
         try:
             output = decrypt_file(os.path.join(store, i))
-            for j in output.readlines():
-                if j.startswith("site: "):
-                    print j.strip().split(": ")[1]
         except gpgme.GpgmeError as e:
             print "Couldn't read %s" % i
             next
+        for j in output.readlines():
+            if j.startswith("site: "):
+                print j.strip().split(": ")[1]
 
 def decrypt_file(encrypted_file):
     gpg_ctx = gpgme.Context()
@@ -48,41 +49,14 @@ def decrypt_file(encrypted_file):
 
     return output
 
-def main():
+def get_site():
 
-    usage = "usage: %prog [options] site"
-    parser = optparse.OptionParser(usage=usage)
-    parser.add_option("-s", "--store", dest="password_store",
-                      help="Path to the password store", metavar="DIRECTORY")
-    password_store = None
+    global_config = gpgpass_config.get_config()
+    site = global_config.get('site')
 
-    (options, args) = parser.parse_args()
-
-    if os.environ.has_key('GPGPASS_DATABASE'):
-            password_store = os.environ['GPGPASS_DATABASE']
-
-    # Let the command line switch override the environment variable
-    if options.password_store:
-            password_store = options.password_store
-
-    if password_store is None:
-        parser.print_help()
-        sys.exit(1)
-
-
-    if len(args) == 0:
-        print_all_sites(password_store)
-        sys.exit(0)
-
-    if len(args) > 1:
-        parser.print_help()
-        sys.exit(1)
-
-
-    site = args[0]
     scrambled_site = hashlib.sha256(site).hexdigest()
 
-    encrypted_file = os.path.join(password_store, scrambled_site)
+    encrypted_file = os.path.join(global_config.get('store'), scrambled_site)
 
     if not os.path.isfile(encrypted_file):
         print "No entry for %s found\n" % site
@@ -98,7 +72,3 @@ def main():
         print i.strip()
 
     sys.exit(0)
-
-
-if __name__ == "__main__":
-    main()

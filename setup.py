@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
         name='gpgpass',
-        version='0.0.1',
+        version='0.0.2',
         description='GPG based password manager',
         author='Josh Bressers',
         author_email='josh@bress.net',
@@ -12,8 +12,7 @@ setup(
         license="GPLv3",
         entry_points = {
             'console_scripts' : [
-                'get-password = gpgpass.get_password.main:main',
-                'set-password = gpgpass.set_password.main:main'
+                'gpgpass = gpgpass.main:main',
             ]
 
         },
